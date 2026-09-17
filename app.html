@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三分彩预测</title>
+<style>
+body{font-family:-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;padding:12px;margin:0;font-size:13px}
+h1{font-size:16px;color:#58a6ff;margin:0 0 8px}
+.bar{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px;margin-bottom:10px;font-size:12px}
+.kill{background:#161b22;border:2px solid #f85149;border-radius:8px;padding:12px;margin-bottom:10px}
+.kill h2{color:#f85149;font-size:14px;margin:0 0 8px}
+.knums{font-size:22px;font-weight:700;color:#f85149;text-align:center;padding:10px 0;letter-spacing:2px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.sb{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:6px;text-align:center}
+.sb .n{font-size:16px;font-weight:700;color:#58a6ff}
+.sb .l{font-size:10px;color:#8b949e}
+.pred{background:#161b22;border:2px solid #1f6feb;border-radius:8px;padding:12px;margin-bottom:10px}
+.pred h2{color:#58a6ff;font-size:14px;margin:0 0 8px}
+.zg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.zc{background:#0d1117;border:2px solid #30363d;border-radius:6px;padding:6px;text-align:center;font-size:12px}
+.zc.on{border-color:#3fb950;color:#3fb950}
+.zc.off{border-color:#f85149;color:#f85149;opacity:.6}
+.di{display:flex;gap:6px;font-size:11px;padding:4px;border-bottom:1px solid #21262d}
+</style>
+</head>
+<body>
+<h1>三分彩 · 杀5码 + 11生肖</h1>
+<div class="bar" id="st">正在加载历史数据…</div>
+<div class="kill">
+<h2>杀 5 码 · 预测下一期不会出</h2>
+<div class="knums" id="killNums">-</div>
+<div class="stats">
+<div class="sb"><div class="n" id="kD">0</div><div class="l">已验证</div></div>
+<div class="sb"><div class="n" id="kH" style="color:#3fb950">0</div><div class="l">杀对</div></div>
+<div class="sb"><div class="n" id="kM" style="color:#f85149">0</div><div class="l">杀错</div></div>
+<div class="sb"><div class="n" id="kR" style="color:#3fb950">-</div><div class="l">胜率</div></div>
+</div>
+</div>
+<div class="pred">
+<h2>下一期 11 个预测生肖</h2>
+<div class="zg" id="zg"><span>等待数据…</span></div>
+</div>
+<div class="bar" style="max-height:300px;overflow-y:auto" id="dl"></div>
+<script>
+var Z={'馬':[1,13,25,37,49],'鼠':[7,19,31,43],'蛇':[2,14,26,38],'豬':[8,20,32,44],'龍':[3,15,27,39],'狗':[9,21,33,45],'兔':[4,16,28,40],'雞':[10,22,34,46],'虎':[5,17,29,41],'猴':[11,23,35,47],'牛':[6,18,30,42],'羊':[12,24,36,48]};
+var ZN=Object.keys(Z);
+var N2Z={};ZN.forEach(function(z){Z[z].forEach(function(n){N2Z[n]=z})});
+var hist=[],killVer=[];
+function p2(n){return String(n).padStart(2,'0')}
+function cntZ(w){var c={};ZN.forEach(function(z){c[z]=0});w.forEach(function(it){if(c[it.zodiac]!==undefined)c[it.zodiac]++});return c}
+function pick11(w){var c=cntZ(w);var s=ZN.slice().sort(function(a,b){return c[b]-c[a]});var ex=s[0];return{picked:ZN.filter(function(z){return z!==ex}),excluded:ex,count:c}}
+function pick5(w){var c={};w.forEach(function(it){c[it.special]=(c[it.special]||0)+1});var s=Object.keys(c).sort(function(a,b){return c[b]-c[a]});var t=s.slice(0,5).map(Number);while(t.length<5){for(var n=1;n<=49;n++){if(t.indexOf(n)<0){t.push(n);break}}}return t.slice(0,5)}
+function calc(){var kl=pick5(hist.slice(-100));document.getElementById('killNums').textContent=kl.map(p2).join(' , ');var p=pick11(hist.slice(-100));var h='';ZN.forEach(function(z){var cls=p.picked.indexOf(z)>=0?'on':'off';h+='<div class="zc '+cls+'">'+z+'<br>'+Z[z].map(p2).join(' ')+'</div>'});document.getElementById('zg').innerHTML=h;var kh=0,km=0;killVer.forEach(function(d){d.hit?kh++:km++});document.getElementById('kD').textContent=killVer.length;document.getElementById('kH').textContent=kh;document.getElementById('kM').textContent=km;var t=kh+km;document.getElementById('kR').textContent=t?(kh/t*100).toFixed(1)+'%':'-';var dh='';killVer.slice(0,30).forEach(function(d){var b=d.hit?'✓':'✗';var cl=d.hit?'#3fb950':'#f85149';dh+='<div class="di"><span style="color:#8b949e;width:80px">'+d.issue+'</span><span style="color:#d29922">'+p2(d.special)+' '+d.zodiac+'</span><span style="color:'+cl+';margin-left:auto">'+b+'</span></div>'});document.getElementById('dl').innerHTML=dh||'暂无'}
+fetch('https://history.macaumarksix.com/history/macaujc3',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"limit":100}'}).then(function(r){return r.json()}).then(function(j){var recs=j.data.records.slice().reverse();recs.forEach(function(it){var c=it.openCode.split(',').map(function(s){return parseInt(s.trim(),10)});if(c.length<7)return;var sp=c[6];var zod=N2Z[sp]||'?';if(hist.length>=30){var kl=pick5(hist.slice(-100));var kh=kl.indexOf(sp)<0;killVer.unshift({issue:it.expect,special:sp,zodiac:zod,hit:kh})}hist.push({issue:it.expect,special:sp,zodiac:zod})});document.getElementById('st').textContent='已加载 '+hist.length+' 期 · 最新 '+hist[hist.length-1].issue;calc()}).catch(function(e){document.getElementById('st').textContent='加载失败：'+e.message});
+</script>
+</body>
+</html>
