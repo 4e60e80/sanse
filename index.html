@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三分彩 · 11肖 → 杀4码 → 40码池</title>
+<style>
+body{font-family:-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;padding:12px;margin:0;font-size:13px}
+h1{font-size:16px;color:#58a6ff;margin:0 0 8px}
+.bar{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:8px;margin-bottom:10px;font-size:12px}
+.card{background:#161b22;border-radius:8px;padding:12px;margin-bottom:10px}
+.card.blue{border:2px solid #1f6feb}
+.card.red{border:2px solid #f85149}
+.card.green{border:2px solid #3fb950}
+.card h2{font-size:14px;margin:0 0 8px}
+.card.blue h2{color:#58a6ff}
+.card.red h2{color:#f85149}
+.card.green h2{color:#3fb950}
+.zg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.zc{background:#0d1117;border:2px solid #30363d;border-radius:6px;padding:6px;text-align:center;font-size:13px}
+.zc.on{border-color:#3fb950;color:#3fb950}
+.zc.off{border-color:#f85149;color:#f85149;opacity:.6}
+.nums-box{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:10px;font-size:16px;font-weight:700;text-align:center;letter-spacing:1px;font-family:Consolas,monospace;margin-bottom:8px;word-break:break-all;line-height:1.6}
+.card.red .nums-box{color:#f85149;font-size:20px}
+.card.green .nums-box{color:#3fb950;font-size:14px}
+.btn{background:#238636;color:#fff;border:none;border-radius:6px;padding:8px;font-size:13px;cursor:pointer;width:100%}
+.btn:active{background:#1a6b2a}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.sb{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:6px;text-align:center}
+.sb .n{font-size:16px;font-weight:700}
+.sb .l{font-size:10px;color:#8b949e}
+.di{display:flex;gap:6px;font-size:11px;padding:4px;border-bottom:1px solid #21262d;align-items:center}
+.di:last-child{border:none}
+.dl{max-height:260px;overflow-y:auto;background:#0d1117;border-radius:6px;padding:6px;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>三分彩 · 11肖 → 杀4码 → 40码池</h1>
+<div class="bar" id="st">正在加载历史数据…</div>
+
+<div class="card blue">
+<h2>① 11 个预测生肖</h2>
+<div class="zg" id="zg"><span>等待数据…</span></div>
+<div style="font-size:12px;color:#8b949e" id="zxline">-</div>
+</div>
+
+<div class="card red">
+<h2>② 杀 4 码 · 从 11 肖里挑</h2>
+<div class="nums-box" id="kn">-</div>
+<div style="font-size:11px;color:#8b949e">预测这 4 个不会出现在下一期特码</div>
+</div>
+
+<div class="card green">
+<h2>③ 最终号码池</h2>
+<div class="nums-box" id="pool">-</div>
+<div style="font-size:11px;color:#8b949e" id="poolcnt">-</div>
+<button class="btn" onclick="copyPool()" style="margin-top:8px">复制最终号码池</button>
+</div>
+
+<div class="card red">
+<h2>杀 4 码 复盘</h2>
+<div class="stats">
+<div class="sb"><div class="n" id="kD">0</div><div class="l">已验证</div></div>
+<div class="sb"><div class="n" id="kH" style="color:#3fb950">0</div><div class="l">杀对</div></div>
+<div class="sb"><div class="n" id="kM" style="color:#f85149">0</div><div class="l">杀错</div></div>
+<div class="sb"><div class="n" id="kR" style="color:#3fb950">-</div><div class="l">胜率</div></div>
+</div>
+<div class="dl" id="dl"><span>暂无</span></div>
+</div>
+<script>
+var Z={'馬':[1,13,25,37,49],'鼠':[7,19,31,43],'蛇':[2,14,26,38],'豬':[8,20,32,44],'龍':[3,15,27,39],'狗':[9,21,33,45],'兔':[4,16,28,40],'雞':[10,22,34,46],'虎':[5,17,29,41],'猴':[11,23,35,47],'牛':[6,18,30,42],'羊':[12,24,36,48]};
+var ZN=Object.keys(Z);
+var N2Z={};ZN.forEach(function(z){Z[z].forEach(function(n){N2Z[n]=z})});
+var hist=[],killVer=[];
+
+function p2(n){return String(n).padStart(2,'0')}
+function cntZ(w){var c={};ZN.forEach(function(z){c[z]=0});w.forEach(function(it){if(c[it.zodiac]!==undefined)c[it.zodiac]++});return c}
+
+// ① 11肖：排除最近100期出现最多的生肖
+function pick11(w){
+  var c=cntZ(w);
+  var s=ZN.slice().sort(function(a,b){return c[b]-c[a]});
+  var ex=s[0];
+  return{picked:ZN.filter(function(z){return z!==ex}),excluded:ex,count:c};
+}
+
+// ② 杀4码：从11肖覆盖的号码里挑4个"最不会出"
+function pick4(w){
+  var p=pick11(w);
+  var cands=[];
+  p.picked.forEach(function(z){Z[z].forEach(function(n){cands.push(n)})});
+
+  var f100={};w.slice(-100).forEach(function(it){f100[it.special]=(f100[it.special]||0)+1});
+  var lastSeen={};
+  w.forEach(function(it,i){lastSeen[it.special]=i});
+  var total=w.length;
+
+  var scored=cands.map(function(n){
+    var miss=total-1-(lastSeen[n]!==undefined?lastSeen[n]:-1);
+    var freq=f100[n]||0;
+    var score=miss*0.4 + freq*0.6;
+    return {n:n,score:score};
+  });
+
+  scored.sort(function(a,b){return b.score-a.score});
+  return scored.slice(0,4).map(function(x){return x.n});
+}
+
+// ③ 最终号码池 = 11肖全部号码 - 杀4码
+function finalPool(){
+  var p=pick11(hist.slice(-100));
+  var all=[];
+  p.picked.forEach(function(z){Z[z].forEach(function(n){all.push(n)})});
+  var k4=pick4(hist.slice(-100));
+  var pool=all.filter(function(n){return k4.indexOf(n)<0});
+  pool.sort(function(a,b){return a-b});
+  return {pool:pool,k4:k4,picked:p.picked};
+}
+
+// 渲染
+function calc(){
+  if(hist.length<30){
+    document.getElementById('st').textContent='数据不足，需要至少30期（当前'+hist.length+'）';
+    return;
+  }
+
+  var r=finalPool();
+
+  // ① 11肖
+  var h='';
+  ZN.forEach(function(z){
+    var cls=r.picked.indexOf(z)>=0?'on':'off';
+    h+='<div class="zc '+cls+'">'+z+'</div>';
+  });
+  document.getElementById('zg').innerHTML=h;
+  document.getElementById('zxline').textContent=r.picked.join(' · ');
+
+  // ② 杀4码
+  document.getElementById('kn').textContent=r.k4.map(p2).join(' , ');
+
+  // ③ 最终号码池
+  document.getElementById('pool').textContent=r.pool.map(p2).join(', ');
+  document.getElementById('poolcnt').textContent='共 '+r.pool.length+' 个号码 · 11肖全部 - 杀4码';
+
+  window.__pool=r.pool;
+
+  // 复盘统计
+  var kh=0,km=0;
+  killVer.forEach(function(d){d.hit?kh++:km++});
+  document.getElementById('kD').textContent=killVer.length;
+  document.getElementById('kH').textContent=kh;
+  document.getElementById('kM').textContent=km;
+  var t=kh+km;
+  document.getElementById('kR').textContent=t?(kh/t*100).toFixed(1)+'%':'-';
+
+  // 逐期复盘
+  var dh='';
+  killVer.slice(0,30).forEach(function(d){
+    var b=d.hit?'✓':'✗';
+    var cl=d.hit?''#3fb950':'#f85149暂无';
+    dh+='<div class="di';
+"><span style="color:#8b}
+
+949e;width:75px">'+d.issue+'</span><span style="color:#d29922">'+p2(d.special)+'</span><span style="color:#8b949e;font-size:10px">杀:'+d.k.map(p2).join(',')+'</span><span style="color:'+cl+';margin-left:auto;font-weight:700">'+b+'</span></div>';
+  });
+  document.getElementById('dl').innerHTML=dh||// 复制
+function copyPool(){
+  var t=(window.__pool||[]).map(p2).join(', ');
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(t).then(function(){alert('已复制:\n'+t)}).catch(function(){prompt('手动复制:',t)});
+  } else {
+    prompt('手动复制:',t);
+  }
+}
+
+// 加载历史 + 逐期复盘
+fetch('https://history.macaumarksix.com/history/macaujc3',{method:'POST',headers:{'Content-Type':'application/json'},body:'{"limit":100}'})
+.then(function(r){return r.json()})
+.then(function(j){
+  var recs=j.data.records.slice().reverse();
+  recs.forEach(function(it){
+    var c=it.openCode.split(',').map(function(s){return parseInt(s.trim(),10)});
+    if(c.length<7)return;
+    var sp=c[6];
+    var zod=N2Z[sp]||'?';
+    if(hist.length>=30){
+      var k4=pick4(hist.slice(-100));
+      var hit=k4.indexOf(sp)<0;
+      killVer.unshift({issue:it.expect,special:sp,k:k4,hit:hit});
+    }
+    hist.push({issue:it.expect,special:sp,zodiac:zod});
+  });
+  document.getElementById('st').textContent='已加载 '+hist.length+' 期 · 最新 '+hist[hist.length-1].issue;
+  calc();
+})
+.catch(function(e){
+  document.getElementById('st').textContent='加载失败：'+e.message;
+});
+</script>
+</body>
+</html>
